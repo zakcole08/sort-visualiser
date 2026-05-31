@@ -1,6 +1,6 @@
-# Demo
+# Overview
 
-![Demo](.demo/sort-visualiser-demo.gif)
+![Demo](./demo/sort-visualiser-demo.gif)
 
 # Installation
 
