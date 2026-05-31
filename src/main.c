@@ -11,14 +11,27 @@
 int count = 50; // Default
 int *numbers;
 
+typedef struct {
+	bool swappedThisPass;
+	int i, j; // Swapped bars
+	bool done;
+} SortStatus;
+
+SortStatus status;
+
 void draw_bars() {
 	int barWidth = WIDTH/count*0.89;
 	for (int i = 0; i < count; i++) {
+		Color colour = WHITE;
 		int value = numbers[i];
 		int barHeight = value*HEIGHT*0.75/count;
 		int barY = HEIGHT*0.95-barHeight;
 		int barX = WIDTH/count*i;
-		DrawRectangle(barX, barY, barWidth, barHeight, WHITE);
+		if (status.swappedThisPass == true && (i == status.i || i == status.j))
+		{
+			colour = RED;
+		}
+		DrawRectangle(barX, barY, barWidth, barHeight, colour);
 	}	
 }
 
@@ -33,6 +46,8 @@ int sort_step(int step) {
 	int sorted = 0;
 	if (numbers[i] > numbers[i+1]) {
 		swap(i, i+1);
+		status.i = i;
+		status.j = i+1;
 		sorted = 1;
 	}
 	return sorted;
@@ -67,27 +82,25 @@ int main(int argc, char *argv[]) {
 	init_nums();
 
 	InitWindow(WIDTH, HEIGHT, "Sort Visualiser");
-	SetTargetFPS(count*10);
+	SetTargetFPS(count*6);
 	int step = 0;
 	int sortedThisStep;
-	int sortedThisPass;
-	int finished = 0;
 	while (!WindowShouldClose()) {
 		BeginDrawing();
-		if (finished != 1) {
+		if (status.done != 1) {
 			ClearBackground(BLACK);
 			sortedThisStep = sort_step(step);
 			if (sortedThisStep == 1) {
-				sortedThisPass = 1;
+				status.swappedThisPass = true;
 			}
 			draw_bars();
 			step++;
 			if (step >= count - 1) {
-				if (sortedThisPass == 0) {
-					// Finished sorted
-					int finished = 1;
+				if (status.swappedThisPass == 0) {
+					// Finished sorting
+					status.done = true;
 				}
-				sortedThisPass = 0;
+				status.swappedThisPass = 0;
 				step = 0;
 			}
 		}
