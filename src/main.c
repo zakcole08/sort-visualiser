@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #define WIDTH 900
 #define HEIGHT 600
 #define MAX_COUNT 450
 
 int count = 50; // Default
+char *alg = "bubble";
 int *numbers;
 
 typedef struct {
@@ -24,7 +26,7 @@ void draw_bars() {
 	for (int i = 0; i < count; i++) {
 		Color colour = WHITE;
 		int value = numbers[i];
-		int barHeight = value*HEIGHT*0.75/count;
+		int barHeight = (value+1)*HEIGHT*0.75/count;
 		int barY = HEIGHT*0.95-barHeight;
 		int barX = WIDTH/count*i;
 		if (status.swappedThisPass == true && (i == status.i || i == status.j))
@@ -41,35 +43,84 @@ void swap(int i, int j) {
 	numbers[j] = tmp;
 }
 
-int sort_step(int step) {
+void shuffle() {
+	srand(time(NULL));
+	// Fisher Yates Shuffle
+	for (int i = count-1; i >= 0; i--) {
+		int j = rand() % (i+1);
+		swap(i, j);
+	}
+}
+
+void shuffle_step(int step) {
+	srand(time(NULL));
+	// Fisher Yates Shuffle
 	int i = step;
-	int sorted = 0;
+	int j = rand() % (i+1);
+	swap(i, j);
+	status.i = i;
+	status.j = j;
+}
+
+bool is_sorted() {
+	for (int i = 1; i < count; i++) {
+		if (numbers[i] < numbers[i-1]) {
+			return false;
+		}
+	}
+	return true;
+}	
+
+int bogo_sort(int step) {
+	int i = step;
+	int sortedThisStep = 0;
+	while (is_sorted() == false) {
+		shuffle_step(step);
+		sortedThisStep = 1;
+		return sortedThisStep;
+	}
+	return sortedThisStep;	
+}
+
+int bubble_sort(int step) {
+	int i = step;
+	int sortedThisStep = 0;
 	if (numbers[i] > numbers[i+1]) {
 		swap(i, i+1);
 		status.i = i;
 		status.j = i+1;
-		sorted = 1;
+		sortedThisStep = 1;
 	}
-	return sorted;
+	return sortedThisStep;
+}
+
+int sort_step(int step) {
+	int sortedThisStep = 0;
+	if (strcmp(alg, "bubble") == 0) {
+		sortedThisStep = bubble_sort(step);
+	}
+	else if (strcmp(alg, "bogo") == 0) {
+		sortedThisStep = bogo_sort(step);
+	}
+	else {
+		printf("Specified alg doesn't exist. Defaulting to %s\n", alg);
+	}
+	return sortedThisStep;
 }
 
 void init_nums() {
-	srand(time(NULL));
 	for (int i = 0; i < count; i++) {
 		numbers[i] = i;
 	}
-
-	// Fisher Yates Shuffle
-	for (int i = count-1; i >= 0; i--) {
-		int j = rand() % (i+1);
-
-		swap(i, j);
-	}
+	shuffle();	
 }
 
 int main(int argc, char *argv[]) {
 	if (argc > 1) {
 		count = atoi(argv[1]);
+	}
+	if (argc > 2) {
+		alg = argv[2];
 	}
 
 	if (count > MAX_COUNT) {
@@ -82,7 +133,7 @@ int main(int argc, char *argv[]) {
 	init_nums();
 
 	InitWindow(WIDTH, HEIGHT, "Sort Visualiser");
-	SetTargetFPS(count*6);
+	SetTargetFPS(count*4 > 240 ? 240 : count*4);
 	int step = 0;
 	int sortedThisStep;
 	while (!WindowShouldClose()) {
